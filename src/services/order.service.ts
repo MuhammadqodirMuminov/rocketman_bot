@@ -3,13 +3,15 @@ import {
 	IGetAllProducts,
 	IGetAllSubProducts,
 	IGetOrderResponse,
+	IGetSingleSubProductById,
 	IGetSubCategory,
 } from '../interfaces/order-interfaces';
 
 export const OrderService = {
 	async getALlCategories() {
 		try {
-			const response = await axios.get<IGetOrderResponse>('categories');
+			const response = await axios.get<IGetOrderResponse>('find/categories');
+
 			return response.data;
 		} catch (error) {
 			console.log(error);
@@ -38,5 +40,15 @@ export const OrderService = {
 		} catch (error) {
 			console.log(error);
 		}
+	},
+
+	async getSubProductById(id: string) {
+		const response = await axios.get<IGetSingleSubProductById>(`sub_product/${id}`);
+		return response.data;
+	},
+
+	async orderNow(body: any) {
+		const response = await axios.post(`create/order`, body);
+		return response.data
 	},
 };

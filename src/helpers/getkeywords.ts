@@ -6,6 +6,7 @@ interface IResponse {
 
 export const getKeywords = (data: ISingleCategory[]): IResponse[][] => {
 	const keywords = data.map(item => {
+
 		let group = [];
 		const key = { text: item.category_name };
 		group.push(key);

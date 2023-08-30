@@ -80,3 +80,9 @@ export interface IGetAllProducts {
 	message: string;
 	data: ISingleProducts[];
 }
+
+export interface IGetSingleSubProductById {
+	status: number;
+	message: string;
+	data: ISingleSubProduct;
+}

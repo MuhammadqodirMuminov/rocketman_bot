@@ -7,6 +7,7 @@ import { getKeywords } from '../helpers/getkeywords';
 import { getSubProductKeys } from '../helpers/getsubProductsKeys';
 import { bot } from '../server';
 import { OrderService } from '../services/order.service';
+import { RedisService } from '../services/redis.service';
 
 export function createOrder() {
 	return bot.on('text', async msg => {
@@ -33,7 +34,7 @@ export function createOrder() {
 
 		// GET CATEGORIES
 		if (msg.text === '🛒 Buyurtma berish') {
-			const keywords = getKeywords(responseCategory.data);
+			const keywords = getKeywords(responseCategory?.data);
 
 			if (responseCategory.status === 200) {
 				bot.sendMessage(chatId, '✅ Quyidagi kategoriyalardan 🔽 birini tanlang!', {
@@ -48,7 +49,7 @@ export function createOrder() {
 
 		// GET CATEGORIES
 
-		responseCategory.data.forEach(async item => {
+		responseCategory?.data?.forEach(async item => {
 			if (msg.text === item.category_name) {
 				const response = await OrderService.getALlCategories();
 
@@ -60,9 +61,9 @@ export function createOrder() {
 				if (keywords) {
 					bot.sendPhoto(msg.from.id, image, {
 						caption: `👋 🌯 ${item.category_name} kategoriyasi boyicha ${existCategory.subCategories.length} ta natija topildi.
-						
-			
-			📲	Buyurtma berish uchun 🔽 birini tanlang :)`,
+					
+		
+		📲	Buyurtma berish uchun 🔽 birini tanlang :)`,
 						reply_markup: {
 							resize_keyboard: true,
 							one_time_keyboard: true,
@@ -75,7 +76,7 @@ export function createOrder() {
 
 		// GET  ALL SUBCATEGORIES
 
-		responseSubCategory.data.forEach(async item => {
+		responseSubCategory?.data?.forEach(async item => {
 			if (msg.text === item.sub_category_name) {
 				const response = await OrderService.getAllSubCategories();
 
@@ -104,7 +105,7 @@ export function createOrder() {
 
 		// 	PRODUCTS
 
-		responseProducts.data.forEach(async item => {
+		responseProducts?.data?.forEach(async item => {
 			if (msg.text === item.product_name) {
 				const response = await OrderService.getAllProsucts();
 
@@ -122,7 +123,7 @@ export function createOrder() {
 						reply_markup: {
 							resize_keyboard: true,
 							one_time_keyboard: true,
-							remove_keyboard : true,
+							remove_keyboard: true,
 							keyboard: [...keywords, [{ text: '⬅️ Orqaga' }]],
 						},
 					});
@@ -131,42 +132,56 @@ export function createOrder() {
 		});
 
 		// SUBPRODUCTS
+		// console.log(subProduct);
 
 		subProduct?.data?.forEach(async item => {
 			if (msg.text === item.sub_product_name) {
-				let count = 1;
 				const response = await OrderService.getAllSubProducts();
 
-				const existSubCategory = response.data.find(
+				const existSubProduct = response.data.find(
 					data => data.sub_product_name == item.sub_product_name
 				);
-				console.log(existSubCategory);
 
-				bot.sendPhoto(msg.from.id, existSubCategory.image, {
+				let count = (await RedisService.getOrderById(existSubProduct._id))?.count || 0;
+
+				const image = existSubProduct.image.startsWith('http')
+					? existSubProduct.image
+					: createReadStream(resolve('uploads', 'category.jpeg'));
+
+				bot.sendPhoto(msg.from.id, image, {
 					caption: `Nomi : ${item.sub_product_name} \nNarxi : ${item.price} $ \nTavsif : ${item.description}`,
 					reply_markup: {
 						resize_keyboard: true,
 						one_time_keyboard: true,
-						remove_keyboard : true,
+						remove_keyboard: true,
 						inline_keyboard: [
 							[
 								{
 									text: '➖',
-									callback_data: 'add',
+									callback_data: JSON.stringify({
+										action: 'remove',
+										id: existSubProduct._id,
+									}),
 								},
 								{
 									text: `${count}`,
-									callback_data: 'add',
+									callback_data: 'count',
 								},
 								{
 									text: '➕',
-									callback_data: 'remove',
+									callback_data: JSON.stringify({
+										action: 'add',
+										id: existSubProduct._id,
+									}),
 								},
 							],
 							[
 								{
 									text: "🛒 Savatga qo'shish",
-									callback_data: "savatga qo'shish",
+									callback_data: JSON.stringify({
+										action: "savatga qo'shish",
+										id: existSubProduct._id,
+									}),
 								},
 							],
 							[
